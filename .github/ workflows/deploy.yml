@@ -28,7 +28,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Web
-        run: flutter build web --release --base-href "/mashaaer_tayebah_web/"
+        run: flutter build web --release --base-href "/mashaer_tayebah_web/"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
