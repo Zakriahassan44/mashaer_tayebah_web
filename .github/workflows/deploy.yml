@@ -1,6 +1,5 @@
 name: Build and Deploy Flutter Web to GitHub Pages
 
-# Grant the minimum permissions required for pages deployment
 permissions:
   contents: read
   pages: write
@@ -39,19 +38,27 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: web-build
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v3
+          path: build
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v1
+        id: deployment
+        uses: actions/deploy-pages@v4
