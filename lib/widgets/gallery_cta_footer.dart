@@ -3,7 +3,7 @@ import '../content.dart';
 import '../theme.dart';
 import 'common.dart';
 
-/// Saari gallery images ke paths ek jagah.
+/// All gallery image paths in one place.
 /// Files: assets/images/work/a.jpg ... z.jpg, aa.jpg, ab.jpg, ac.jpg
 class GalleryImages {
   GalleryImages._();
@@ -18,51 +18,57 @@ class GalleryImages {
   ].map((name) => '$_basePath/$name.jpg').toList();
 }
 
-class GallerySection extends StatelessWidget {
+class GallerySection extends StatefulWidget {
   final bool isArabic;
   const GallerySection({super.key, required this.isArabic});
 
-  Widget _img(String path, {double? height}) => ClipRRect(
-    borderRadius: BorderRadius.circular(12),
-    child: Image.asset(
-      path,
-      fit: BoxFit.cover,
-      height: height,
-      width: double.infinity,
-      cacheWidth: 800,
-      errorBuilder: (_, __, ___) => Container(
-        color: AppColors.line,
-        child: const Icon(Icons.broken_image_outlined, color: AppColors.muted),
+  @override
+  State<GallerySection> createState() => _GallerySectionState();
+}
+
+class _GallerySectionState extends State<GallerySection> {
+  // Showing everything at once loads 29 photos on first paint; start with a
+  // page of them and let the visitor ask for more.
+  static const int _initialCount = 12;
+
+  bool _expanded = false;
+
+  void _openViewer(String path) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(16),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              child: Image.asset(path, fit: BoxFit.contain),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(dialogContext).pop(),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-
-  Widget _pair(String left, String right) => Row(
-    children: [
-      Expanded(child: Padding(padding: const EdgeInsets.only(right: 8), child: _img(left))),
-      Expanded(child: Padding(padding: const EdgeInsets.only(left: 8), child: _img(right))),
-    ],
-  );
-
-  Widget _grid(List<String> paths, int columns) => GridView.builder(
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    itemCount: paths.length,
-    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: columns,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-    ),
-    itemBuilder: (_, i) => _img(paths[i]),
-  );
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = widget.isArabic;
     final width = MediaQuery.sizeOf(context).width;
-    final narrow = width <= Breakpoints.mobile;
-    final images = GalleryImages.all;
-    final featured = images.take(7).toList();
-    final rest = images.skip(7).toList();
+    final cols = width > Breakpoints.tablet
+        ? 4
+        : (width > Breakpoints.mobile ? 3 : 2);
+
+    final all = GalleryImages.all;
+    final visible = _expanded ? all : all.take(_initialCount).toList();
 
     return Container(
       color: AppColors.cream2,
@@ -71,45 +77,76 @@ class GallerySection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              Content.galleryKicker.of(isArabic),
-              style: const TextStyle(color: AppColors.goldDark, fontWeight: FontWeight.w700, fontSize: 14),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              Content.galleryTitle.of(isArabic),
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+            SectionHeading(
+              kicker: Content.galleryKicker.of(isArabic),
+              title: Content.galleryTitle.of(isArabic),
             ),
             const SizedBox(height: 32),
-            if (narrow)
-              _grid(images, 2)
-            else ...[
-              SizedBox(
-                height: 460,
-                child: Row(
-                  children: [
-                    Expanded(flex: 2, child: _img(featured[0], height: 460)),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        children: [
-                          Expanded(child: _pair(featured[1], featured[2])),
-                          const SizedBox(height: 16),
-                          Expanded(child: _pair(featured[3], featured[4])),
-                        ],
-                      ),
-                    ),
-                  ],
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: visible.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                // The photos are portrait, so portrait tiles crop them far less
+                // than the old square tiles did.
+                childAspectRatio: 0.75,
+              ),
+              itemBuilder: (context, i) => _GalleryTile(
+                path: visible[i],
+                onTap: () => _openViewer(visible[i]),
+              ),
+            ),
+            if (!_expanded && all.length > _initialCount) ...[
+              const SizedBox(height: 32),
+              Center(
+                child: OutlineButton(
+                  label: Content.galleryMore.of(isArabic),
+                  borderColor: AppColors.goldDark,
+                  textColor: AppColors.ink,
+                  onTap: () => setState(() => _expanded = true),
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(height: 220, child: _pair(featured[5], featured[6])),
-              const SizedBox(height: 16),
-              _grid(rest, 4),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _GalleryTile extends StatelessWidget {
+  final String path;
+  final VoidCallback onTap;
+  const _GalleryTile({required this.path, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            path,
+            fit: BoxFit.cover,
+            cacheWidth: 600,
+            errorBuilder: (_, __, ___) => Container(
+              color: AppColors.line,
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.broken_image_outlined,
+                color: AppColors.muted,
+              ),
+            ),
+          ),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(onTap: onTap),
+          ),
+        ],
       ),
     );
   }
@@ -139,7 +176,11 @@ class CtaSection extends StatelessWidget {
               Text(
                 Content.ctaTitle.of(isArabic),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFFF4EDE0), fontSize: 30, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  color: Color(0xFFF4EDE0),
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 36),
               InkWell(
@@ -147,12 +188,17 @@ class CtaSection extends StatelessWidget {
                 child: Text(
                   Content.phoneDisplay,
                   textDirection: TextDirection.ltr,
-                  style: const TextStyle(color: AppColors.gold, fontSize: 34, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    color: AppColors.gold,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 Content.ctaAddress.of(isArabic),
+                textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFFC9BFAE), fontSize: 15),
               ),
               const SizedBox(height: 32),
@@ -175,21 +221,28 @@ class SiteFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.line))),
-      child: Center(
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(Content.footerName.of(isArabic), style: const TextStyle(color: AppColors.muted, fontSize: 13)),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Text('•', style: TextStyle(color: AppColors.muted)),
-            ),
-            Text(Content.footerCity.of(isArabic), style: const TextStyle(color: AppColors.muted, fontSize: 13)),
-          ],
-        ),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.line)),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            Content.footerName.of(isArabic),
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text('•', style: TextStyle(color: AppColors.muted)),
+          ),
+          Text(
+            Content.footerCity.of(isArabic),
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+        ],
       ),
     );
   }

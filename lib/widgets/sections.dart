@@ -17,22 +17,20 @@ class IntroSection extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 680),
             child: Column(
               children: [
-                Text(
-                  Content.introKicker.of(isArabic),
-                  style: const TextStyle(color: AppColors.goldDark, fontWeight: FontWeight.w700, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  Content.introTitle.of(isArabic),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                SectionHeading(
+                  kicker: Content.introKicker.of(isArabic),
+                  title: Content.introTitle.of(isArabic),
+                  centered: true,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   Content.introBody.of(isArabic),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, color: AppColors.bodyText, height: 1.6),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.bodyText,
+                    height: 1.6,
+                  ),
                 ),
               ],
             ),
@@ -49,8 +47,11 @@ class ServicesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final cols = width > Breakpoints.tablet ? 4 : (width > Breakpoints.mobile ? 2 : 2);
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width <= Breakpoints.mobile;
+    final cols = width > Breakpoints.tablet ? 4 : 2;
+    final itemCount = Content.services.length;
+    final rows = (itemCount / cols).ceil();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 80),
@@ -58,14 +59,9 @@ class ServicesSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              Content.servicesKicker.of(isArabic),
-              style: const TextStyle(color: AppColors.goldDark, fontWeight: FontWeight.w700, fontSize: 14),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              Content.servicesTitle.of(isArabic),
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+            SectionHeading(
+              kicker: Content.servicesKicker.of(isArabic),
+              title: Content.servicesTitle.of(isArabic),
             ),
             const SizedBox(height: 40),
             Container(
@@ -77,45 +73,22 @@ class ServicesSection extends StatelessWidget {
               child: GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: Content.services.length,
+                itemCount: itemCount,
+                // A fixed row height (instead of an aspect ratio) keeps the cell
+                // tall enough for image + 2-line names on every screen width.
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: cols,
-                  childAspectRatio: cols == 4 ? 1.05 : 1.4,
+                  mainAxisExtent: compact ? 240 : 270,
                 ),
                 itemBuilder: (context, i) {
-                  final item = Content.services[i];
-                  final num = (i + 1).toString().padLeft(2, '0');
-                  return Container(
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: AppColors.line),
-                        bottom: BorderSide(color: AppColors.line),
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(24),
-                    alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(item.image, height: 90, width: 90, fit: BoxFit.cover),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(num, style: const TextStyle(color: AppColors.goldDark, fontWeight: FontWeight.w700, fontSize: 12)),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.name.of(isArabic),
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.name.of(!isArabic),
-                          style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                        ),
-                      ],
-                    ),
+                  return _ServiceCell(
+                    item: Content.services[i],
+                    number: (i + 1).toString().padLeft(2, '0'),
+                    isArabic: isArabic,
+                    compact: compact,
+                    // Inner dividers only: the outer frame already draws the edges.
+                    showEndDivider: (i % cols) != cols - 1,
+                    showBottomDivider: (i ~/ cols) != rows - 1,
                   );
                 },
               ),
@@ -127,39 +100,143 @@ class ServicesSection extends StatelessWidget {
   }
 }
 
+class _ServiceCell extends StatelessWidget {
+  final ServiceItem item;
+  final String number;
+  final bool isArabic;
+  final bool compact;
+  final bool showEndDivider;
+  final bool showBottomDivider;
+
+  const _ServiceCell({
+    required this.item,
+    required this.number,
+    required this.isArabic,
+    required this.compact,
+    required this.showEndDivider,
+    required this.showBottomDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const divider = BorderSide(color: AppColors.line);
+    final imageSize = compact ? 72.0 : 90.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        // BorderDirectional follows the text direction, so it is correct in RTL too.
+        border: BorderDirectional(
+          end: showEndDivider ? divider : BorderSide.none,
+          bottom: showBottomDivider ? divider : BorderSide.none,
+        ),
+      ),
+      padding: EdgeInsets.all(compact ? 16 : 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              item.image,
+              height: imageSize,
+              width: imageSize,
+              fit: BoxFit.cover,
+              cacheWidth: 300,
+            ),
+          ),
+          SizedBox(height: compact ? 10 : 14),
+          Text(
+            number,
+            style: const TextStyle(
+              color: AppColors.goldDark,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.name.of(isArabic),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: compact ? 15 : 17,
+              fontWeight: FontWeight.w800,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            item.name.of(!isArabic),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: compact ? 11 : 12,
+              color: AppColors.muted,
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class FeatureSection extends StatelessWidget {
   final bool isArabic;
   const FeatureSection({super.key, required this.isArabic});
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final narrow = width <= Breakpoints.tablet;
+    final narrow = MediaQuery.sizeOf(context).width <= Breakpoints.tablet;
 
     final image = ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Image.asset('assets/images/mixer.jpg', height: narrow ? 240 : 400, fit: BoxFit.cover, width: double.infinity),
+      child: Image.asset(
+        'assets/images/colour-swatches.jpg',
+        height: narrow ? 240 : 400,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      ),
     );
 
     final text = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(Content.featureKicker.of(isArabic),
-            style: const TextStyle(color: AppColors.goldDark, fontWeight: FontWeight.w700, fontSize: 14)),
-        const SizedBox(height: 12),
-        Text(Content.featureTitle.of(isArabic), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, height: 1.3)),
+        SectionHeading(
+          kicker: Content.featureKicker.of(isArabic),
+          title: Content.featureTitle.of(isArabic),
+          titleSize: 26,
+        ),
         const SizedBox(height: 16),
-        Text(Content.featureBody.of(isArabic), style: const TextStyle(fontSize: 16, color: AppColors.bodyText, height: 1.6)),
+        Text(
+          Content.featureBody.of(isArabic),
+          style: const TextStyle(
+            fontSize: 16,
+            color: AppColors.bodyText,
+            height: 1.6,
+          ),
+        ),
         const SizedBox(height: 22),
         InkWell(
           onTap: () => launchUrlSafely(Content.whatsappUrl),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(Content.featureLink.of(isArabic),
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.goldDark)),
+              Text(
+                Content.featureLink.of(isArabic),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.goldDark,
+                ),
+              ),
               const SizedBox(width: 8),
-              Icon(isArabic ? Icons.arrow_back : Icons.arrow_forward, size: 18, color: AppColors.goldDark),
+              Icon(
+                isArabic ? Icons.arrow_back : Icons.arrow_forward,
+                size: 18,
+                color: AppColors.goldDark,
+              ),
             ],
           ),
         ),
@@ -170,12 +247,19 @@ class FeatureSection extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 90),
       child: SiteContainer(
         child: narrow
-            ? Column(children: [image, const SizedBox(height: 32), text])
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [image, const SizedBox(height: 32), text],
+              )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: isArabic
-                    ? [Expanded(child: text), const SizedBox(width: 56), Expanded(child: image)]
-                    : [Expanded(child: image), const SizedBox(width: 56), Expanded(child: text)],
+                // The Row already flips in RTL, so the order is the same in both
+                // languages: text first (right side in Arabic), image second.
+                children: [
+                  Expanded(child: text),
+                  const SizedBox(width: 56),
+                  Expanded(child: image),
+                ],
               ),
       ),
     );

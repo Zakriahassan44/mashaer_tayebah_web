@@ -7,8 +7,6 @@ class SiteContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsets? padding;
 
-  //abc
-
   const SiteContainer({super.key, required this.child, this.padding});
 
   @override
@@ -28,6 +26,71 @@ class SiteContainer extends StatelessWidget {
 Future<void> launchUrlSafely(String url) async {
   final uri = Uri.parse(url);
   await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+/// Kicker + title (+ optional subtitle) used at the top of every section,
+/// so the sections stay visually consistent and the styling lives in one place.
+class SectionHeading extends StatelessWidget {
+  final String kicker;
+  final String title;
+  final String? subtitle;
+  final bool centered;
+  final double titleSize;
+
+  const SectionHeading({
+    super.key,
+    required this.kicker,
+    required this.title,
+    this.subtitle,
+    this.centered = false,
+    this.titleSize = 28,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textAlign = centered ? TextAlign.center : TextAlign.start;
+
+    return Column(
+      crossAxisAlignment:
+          centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        Text(
+          kicker,
+          textAlign: textAlign,
+          style: const TextStyle(
+            color: AppColors.goldDark,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          textAlign: textAlign,
+          style: TextStyle(
+            fontSize: titleSize,
+            fontWeight: FontWeight.w800,
+            height: 1.3,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 10),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: Text(
+              subtitle!,
+              textAlign: textAlign,
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.bodyText,
+                height: 1.6,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class PrimaryButton extends StatelessWidget {

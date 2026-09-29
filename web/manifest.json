@@ -1,12 +1,12 @@
 {
-    "name": "mashaer_tayebah_web",
-    "short_name": "mashaer_tayebah_web",
+    "name": "Mashaer Tayebah Trading",
+    "short_name": "Mashaer Tayebah",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#FAF6EE",
+    "theme_color": "#C1893C",
+    "description": "Paints, decor and thermal insulation in Al-Qassim, Saudi Arabia.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

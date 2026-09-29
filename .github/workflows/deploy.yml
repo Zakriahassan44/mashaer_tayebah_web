@@ -1,68 +1,60 @@
 name: Build and Deploy Flutter Web to GitHub Pages
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# Only one deploy at a time; a newer push cancels the older run.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pubspec.lock needs Flutter >= 3.44 / Dart >= 3.13, so the old pin (3.24.5) broke `pub get`.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.24.5'
+          flutter-version: '3.47.0'
+          cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
+      # GitHub Pages serves a project site from /<repo-name>/, so the base href must match.
+      # Without it index.html loads but every asset 404s and you see a blank page.
       - name: Build web app
-        run: flutter build web --release
+        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      # Single-page app: unknown paths should fall back to index.html.
+      - name: Add SPA fallback
+        run: cp build/web/index.html build/web/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: web-build
           path: build/web
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
     permissions:
       pages: write
       id-token: write
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: web-build
-          path: build
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: build
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

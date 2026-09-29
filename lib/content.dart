@@ -121,6 +121,7 @@ class Content {
   // Gallery
   static const galleryKicker = L('المنتجات والأعمال', 'PRODUCTS & WORK');
   static const galleryTitle = L('جودة تراها في كل تفصيلة', 'Quality you can see in every detail');
+  static const galleryMore = L('عرض المزيد', 'Show more');
 
   // CTA
   static const ctaKicker = L('جاهز لتجديد بيتك أو مشروعك؟', 'Ready to refresh your home or project?');
