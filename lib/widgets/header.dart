@@ -85,7 +85,10 @@ class _Brand extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.format_paint, size: 28, color: AppColors.gold),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset('assets/images/logo.png', width: 40, height: 40),
+        ),
         const SizedBox(width: 12),
         // Flexible + ellipsis: a long brand name can never overflow a phone screen.
         Flexible(
