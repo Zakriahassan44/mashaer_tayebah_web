@@ -21,7 +21,7 @@ class HeroSection extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/hero.jpg',
+              'assets/images/herotwo.png',
               fit: BoxFit.cover,
               // On a tall phone screen keep the paint cans (right side) in view.
               alignment: narrow ? const Alignment(0.35, 0) : Alignment.center,
